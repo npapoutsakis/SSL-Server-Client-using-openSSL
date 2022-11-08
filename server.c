@@ -204,7 +204,6 @@ void Servlet(const SSL* ssl) /* Serve the connection -- threadable */
 
 int main(int count, char *Argc[])
 {
-
     //Only root user have the permission to run the server
     if(!isRoot())
     {
@@ -218,22 +217,41 @@ int main(int count, char *Argc[])
     }
     
     // Initialize the SSL library
+    SSL_library_init();
+        
     /* initialize SSL */
+    SSL_CTX *ctx = InitServerCTX();
+
     /* load certs */
+    LoadCertificates(ctx, "mycert.pem", "mycert.pem");
+
     /* create server socket */
+    int server_socket = OpenListener(atoi(Argc[1]));
+
     while (1)
     {
-			/* accept connection as usual */
+		/* accept connection as usual */
+        struct sockaddr_in addr;
+
+        int client = accept(server_socket, (struct sockaddr *)&addr, (socklen_t)sizeof(addr));
+
         printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-			/* get new SSL state with context */
-			/* set connection socket to SSL state */
-			/* service connection */
+		
+        /* get new SSL state with context */
+        SSL *ssl = SSL_new(ctx);
+
+		/* set connection socket to SSL state */
+		SSL_set_fd(ssl, client);
+
+        /* service connection */
+        Servlet(ssl);
     }
-		/* close server socket */
-		/* release context */
+    
+    /* close server socket */
+    close(server_socket);
 
-
-
+	/* release context */
+    SSL_free(ctx);
 
     return 0;
 }
