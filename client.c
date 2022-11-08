@@ -110,10 +110,24 @@ int main(int count, char *strings[])
         printf("usage: %s <hostname> <portnum>\n", strings[0]);
         exit(0);
     }
-    /* */
-    /* create new SSL connection state */
-		/* attach the socket descriptor */
-		/* perform the connection */
+
+    //registers the available SSL/TLS ciphers and digests. -> always returns 1
+    SSL_library_init();
+
+    //Init ctx, so that we can make an ssl connection
+    SSL_CTX *ctx = InitCTX();
+
+    //Open connection
+    int server_id = OpenConnection(strings[1], atoi(strings[2])); //atoi used to convert the string into integer
+
+    /* create new SSL connection state */ 
+    //Now that we have both the context and the socket id, just create the ssl structure
+    SSL *ssl = SSL_new(ctx);
+      
+    /* attach the socket descriptor */
+	SSL_set_fd(ssl, server_id);
+
+    /* perform the connection */
     if ( SSL_connect(ssl) == FAIL )   /* connection fail */
         ERR_print_errors_fp(stderr);
     else
@@ -124,18 +138,49 @@ int main(int count, char *strings[])
                                <UserName>%s<UserName>\
                  <Password>%s<Password>\
                  <\\Body>";
+
         printf("Enter the User Name : ");
         scanf("%s",acUsername);
+        
         printf("\n\nEnter the Password : ");
         scanf("%s",acPassword);
-				/* construct reply */
+
+
+        //sprintf can create the string in the format we want https://www.tutorialspoint.com/c_standard_library/c_function_sprintf.htm
+        /* construct reply */
+        char *client_msg_req;
+        sprintf(client_msg_req, cpRequestMessage, acUsername, acPassword);
+		
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
-   			/* get any certs */
+
+   		/* get any certs */
+        ShowCerts(ssl);
+
+        //Usefull https://man.openbsd.org/SSL_write.3
         /* encrypt & send message */
+        int check = SSL_write(ssl, client_msg_req, sizeof(client_msg_req));
+        if(check <= 0){
+            fprintf(stderr, "Encryption Failed!\n");
+            exit(1);
+        }
+
         /* get reply & decrypt */
-	      /* release connection state */
+        char *buffer;
+        int bytes = SSL_read(ssl, buffer, sizeof(buffer));
+        buffer[bytes] = 0;
+        printf("Received Message:\"%s\"\n", buffer);
+
+        /* release connection state */
+        SSL_free(ssl);
+        //SSL_shutdown(ssl);???
     }
-		/* close socket */
-		/* release context */
+
+    /* close socket */
+	close(server_id);
+
+    /* release context */
+    //removes the SSL_CTX object pointed to by ctx and frees up the allocated memory
+	SSL_CTX_free(ctx);
+    
     return 0;
 }
