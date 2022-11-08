@@ -14,11 +14,10 @@
 int OpenConnection(const char *hostname, int port)
 {
     //Almost the same as the openListener, but on client's side we connect to the socket
-    struct hostent *host;
     struct sockaddr_in addr;
 
     //Check if host exists!
-    host = gethostbyname(hostname);
+    struct hostent *host = gethostbyname(hostname);
     if (host == NULL){
         perror(hostname);
         abort();
@@ -41,38 +40,58 @@ int OpenConnection(const char *hostname, int port)
         //Close the file descriptor/socket
         close(sd);
     }
-    
+
     return sd;
 }
 
 SSL_CTX* InitCTX(void)
 {
-	/* Load cryptos, et.al. */
-	/* Bring in and register error messages */
-	/* Create new client-method instance */
-	/* Create new context */
-    if ( ctx == NULL )
-    {
+    //Similarities with initServerCTX
+    /* Load cryptos, et.al. */
+    OpenSSL_add_ssl_algorithms();
+    
+    /* Bring in and register error messages */
+    ERR_load_crypto_strings();
+
+	/* Create new client-method instance -> no need*/
+    //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
+    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_client_method()); /* Create new client-method instance and parse*/
+
+    //If null -> abort()
+    if (ctx == NULL){
         ERR_print_errors_fp(stderr);
         abort();
     }
+
     return ctx;
 }
 
-void ShowCerts(SSL* ssl)
-{
-	/* get the server's certificate */
-    if ( cert != NULL )
+void ShowCerts(const SSL* ssl)
+{   
+    //allocate an empty X509 object
+    X509 *cert = X509_new();
+
+	/* get the server's certificate */ // or get_peer_certificate()?
+    cert = SSL_get_certificate(ssl);    
+
+    //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
+    if (cert != NULL)
     {
         printf("Server certificates:\n");
-        /* */
-        printf("Subject: %s\n", line);
-       	/* */
-        printf("Issuer: %s\n", line);
-        free(line);
+        
+        char *subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
+        printf("Subject: %s\n", subj);
+    
+        char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);    	    
+        printf("Issuer: %s\n", issuer);
+    
+        //Free space occupied from X509_new();
+        X509_free(cert);  
     }
     else
         printf("Info: No client certificates configured.\n");
+
+    return;
 }
 
 int main(int count, char *strings[])
