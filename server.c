@@ -61,7 +61,9 @@ SSL_CTX* InitServerCTX(void)
 
 	/* Create new client-method instance -> no need*/
     //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
-    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_server_method()); /* Create new client-method instance and parse*/
+    const SSL_METHOD *method = TLSv1_2_server_method();
+
+    SSL_CTX *ctx = SSL_CTX_new(method); /* Create new client-method instance and parse*/
 
     //If null -> abort()
     if (ctx == NULL){
@@ -115,10 +117,10 @@ void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
     return;
 }
 
-void ShowCerts(const SSL* ssl)
+void ShowCerts(SSL* ssl)
 {
     //allocate an empty X509 object
-    const X509 *cert = X509_new();
+    X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
     cert = SSL_get_certificate(ssl);    
@@ -150,20 +152,21 @@ void ShowCerts(const SSL* ssl)
         printf("No certificates.\n");
 }
 
-void Servlet(const SSL* ssl) /* Serve the connection -- threadable */
+void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
-    const char* ServerResponse="<Body>\
-                               <Name>sousi.com</Name>\
-                 <year>1.5</year>\
-                 <BlogType>Embedede and c\\c++<\\BlogType>\
-                 <Author>John Johny<Author>\
-                 <\\Body>";
-    const char *cpValidMessage = "<Body>\
-                               <UserName>sousi<UserName>\
-                 <Password>123<Password>\
-                 <\\Body>";
+    const char* ServerResponse="<\Body>\
+                                <Name>sousi.com</Name>\
+                                <year>1.5</year>\
+                                <BlogType>Embedede and c\\c++<\BlogType>\
+                                <Author>John Johny<Author>\
+                                <\Body>";
+    
+    const char *cpValidMessage ="<\Body>\
+                                 <UserName>sousi<UserName>\
+                                 <Password>123<Password>\
+                                 <\Body>";
 	
     /* do SSL-protocol accept */
     if ( SSL_accept(ssl) == FAIL) {
@@ -227,13 +230,14 @@ int main(int count, char *Argc[])
 
     /* create server socket */
     int server_socket = OpenListener(atoi(Argc[1]));
-
+    
     while (1)
     {
 		/* accept connection as usual */
         struct sockaddr_in addr;
+        socklen_t len = sizeof(addr);
 
-        int client = accept(server_socket, (struct sockaddr *)&addr, (socklen_t)sizeof(addr));
+        int client = accept(server_socket, (struct sockaddr *)&addr, &len);
 
         printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 		
@@ -244,14 +248,14 @@ int main(int count, char *Argc[])
 		SSL_set_fd(ssl, client);
 
         /* service connection */
-        Servlet(ssl);
+        Servlet(ssl);   
     }
     
     /* close server socket */
     close(server_socket);
 
 	/* release context */
-    SSL_free(ctx);
-
+    SSL_CTX_free(ctx);
+    
     return 0;
 }

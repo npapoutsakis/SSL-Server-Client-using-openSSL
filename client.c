@@ -48,7 +48,7 @@ SSL_CTX* InitCTX(void)
 {
     //Similar to initServerCTX
     /* Load cryptos, et.al. */
-    OpenSSL_add_ssl_algorithms();
+    OpenSSL_add_all_algorithms();
     
     /* Bring in and register error messages */
     ERR_load_crypto_strings();
@@ -66,10 +66,10 @@ SSL_CTX* InitCTX(void)
     return ctx;
 }
 
-void ShowCerts(const SSL* ssl)
+void ShowCerts(SSL* ssl)
 {   
     //allocate an empty X509 object
-    const X509 *cert = X509_new();
+    X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
     cert = SSL_get_certificate(ssl);    
@@ -134,10 +134,10 @@ int main(int count, char *strings[])
     {
         char acUsername[16] = {0};
         char acPassword[16] = {0};
-        const char *cpRequestMessage = "<Body>\
-                               <UserName>%s<UserName>\
-                 <Password>%s<Password>\
-                 <\\Body>";
+        const char *cpRequestMessage = "<\Body>\
+                                        <UserName>%s<UserName>\
+                                        <Password>%s<Password>\
+                                        <\Body>";
 
         printf("Enter the User Name : ");
         scanf("%s",acUsername);
@@ -148,7 +148,7 @@ int main(int count, char *strings[])
 
         //sprintf can create the string in the format we want https://www.tutorialspoint.com/c_standard_library/c_function_sprintf.htm
         /* construct reply */
-        char *client_msg_req;
+        char client_msg_req[1024] = {0};
         sprintf(client_msg_req, cpRequestMessage, acUsername, acPassword);
 		
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
