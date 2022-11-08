@@ -165,8 +165,10 @@ int main(int count, char *strings[])
         }
 
         /* get reply & decrypt */
-        char *buffer;
+        char buffer[1024] = {0};
         int bytes = SSL_read(ssl, buffer, sizeof(buffer));
+        
+        //The last is null char so set to 0
         buffer[bytes] = 0;
         printf("Received Message:\"%s\"\n", buffer);
 

@@ -83,6 +83,7 @@ void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
         abort();
     }
     
+    //set default locations for trusted CA certificates
     result = SSL_CTX_set_default_verify_paths(ctx);
     if(result != 1){
         ERR_print_errors_fp(stderr);
@@ -111,13 +112,12 @@ void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
         ERR_print_errors_fp(stderr);
         abort();
     }
-
     return;
 }
 
 void ShowCerts(const SSL* ssl)
 {
-   //allocate an empty X509 object
+    //allocate an empty X509 object
     const X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
@@ -150,7 +150,7 @@ void ShowCerts(const SSL* ssl)
         printf("No certificates.\n");
 }
 
-void Servlet(SSL* ssl) /* Serve the connection -- threadable */
+void Servlet(const SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
@@ -164,12 +164,42 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
                                <UserName>sousi<UserName>\
                  <Password>123<Password>\
                  <\\Body>";
-	/* do SSL-protocol accept */
-  /*else print "Invalid Message" */
-  
-	/* get socket connection */
-	/* release SSL state */
-  /* close connection */
+	
+    /* do SSL-protocol accept */
+    if ( SSL_accept(ssl) == FAIL) {
+        ERR_print_errors_fp(stderr);
+    }
+    else {
+        ShowCerts(ssl);
+        bytes = SSL_read(ssl, buf, sizeof(buf));
+        buf[bytes] = '\0';
+        printf("Client msg: \"%s\"\n", buf);
+
+        if(bytes > 0) {
+            if(strcmp(cpValidMessage,buf) == 0){
+                //print the correct response
+                SSL_write(ssl, ServerResponse, strlen(ServerResponse));
+            }
+            else {
+                /*else print "Invalid Message" */
+                SSL_write(ssl, "Invalid Message\n", strlen("Invalid Message\n"));
+            }
+        }
+        else {
+            ERR_print_errors_fp(stderr);    
+        }       
+
+        /* get socket connection */
+        sd = SSL_get_fd(ssl);        
+        
+         /* release SSL state */
+        SSL_free(ssl);                  
+        
+        /* close connection */
+        close(sd);                      
+    }   
+    
+    return;  
 }
 
 int main(int count, char *Argc[])
