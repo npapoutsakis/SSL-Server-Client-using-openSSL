@@ -17,11 +17,14 @@ int OpenListener(int port)
 {
     int sd;
     struct sockaddr_in addr;
+    
     sd = socket(PF_INET, SOCK_STREAM, 0);
     bzero(&addr, sizeof(addr));
+    
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
+
     if (bind(sd, (struct sockaddr*)&addr, sizeof(addr)) != 0 )
     {
         perror("can't bind port");
@@ -42,7 +45,7 @@ int isRoot()
         return 0;
     }
     else
-    {
+    {   
         return 1;
     }
 }
@@ -92,16 +95,16 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
-    const char* ServerResponse="<\Body>\
+    const char* ServerResponse="<Body>\
                                <Name>sousi.com</Name>\
                  <year>1.5</year>\
-                 <BlogType>Embedede and c\c++<\BlogType>\
+                 <BlogType>Embedede and c\\c++<\\BlogType>\
                  <Author>John Johny<Author>\
-                 <\Body>";
+                 <\\Body>";
     const char *cpValidMessage = "<Body>\
                                <UserName>sousi<UserName>\
                  <Password>123<Password>\
-                 <\Body>";
+                 <\\Body>";
 	/* do SSL-protocol accept */
   /*else print "Invalid Message" */
   
@@ -113,17 +116,18 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 int main(int count, char *Argc[])
 {
 
-//Only root user have the permsion to run the server
+    //Only root user have the permission to run the server
     if(!isRoot())
     {
-        printf("This program must be run as root/sudo user!!");
+        printf("This program must be run as root/sudo user!!\n");
         exit(0);
     }
-    if ( count != 2 )
+    if (count != 2)
     {
         printf("Usage: %s <portnum>\n", Argc[0]);
         exit(0);
     }
+    
     // Initialize the SSL library
     /* initialize SSL */
     /* load certs */
@@ -138,4 +142,9 @@ int main(int count, char *Argc[])
     }
 		/* close server socket */
 		/* release context */
+
+
+
+
+    return 0;
 }

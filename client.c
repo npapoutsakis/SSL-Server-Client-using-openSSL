@@ -13,19 +13,36 @@
 
 int OpenConnection(const char *hostname, int port)
 {
+    //Almost the same as the openListener, but on client's side we connect to the socket
+    struct hostent *host;
+    struct sockaddr_in addr;
 
-
-
-
+    //Check if host exists!
+    host = gethostbyname(hostname);
+    if (host == NULL){
+        perror(hostname);
+        abort();
+    }
     
+    int sd = socket(PF_INET, SOCK_STREAM, 0);
+    bzero(&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);    
 
+    //Host's address
+    addr.sin_addr.s_addr = *(long*)(host->h_addr);
 
+    //Open a connection on socket sd, returns 0 if success
+    connect(sd, (struct sockaddr*)&addr, sizeof(addr));
 
-
-
-
-
-    return 0;
+    if(sd != 0){
+        perror(hostname);
+        abort();
+        //Close the file descriptor/socket
+        close(sd);
+    }
+    
+    return sd;
 }
 
 SSL_CTX* InitCTX(void)
@@ -78,7 +95,7 @@ int main(int count, char *strings[])
         const char *cpRequestMessage = "<Body>\
                                <UserName>%s<UserName>\
                  <Password>%s<Password>\
-                 <\Body>";
+                 <\\Body>";
         printf("Enter the User Name : ");
         scanf("%s",acUsername);
         printf("\n\nEnter the Password : ");
