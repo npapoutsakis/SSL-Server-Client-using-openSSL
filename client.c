@@ -46,7 +46,7 @@ int OpenConnection(const char *hostname, int port)
 
 SSL_CTX* InitCTX(void)
 {
-    //Similarities with initServerCTX
+    //Similar to initServerCTX
     /* Load cryptos, et.al. */
     OpenSSL_add_ssl_algorithms();
     
@@ -69,7 +69,7 @@ SSL_CTX* InitCTX(void)
 void ShowCerts(const SSL* ssl)
 {   
     //allocate an empty X509 object
-    X509 *cert = X509_new();
+    const X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
     cert = SSL_get_certificate(ssl);    
@@ -79,12 +79,21 @@ void ShowCerts(const SSL* ssl)
     {
         printf("Server certificates:\n");
         
+        //X509_NAME_oneline returns the string dynamically, size ignored
         char *subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
-        printf("Subject: %s\n", subj);
+        if (subj != NULL){
+            printf("Subject: %s\n", subj);
+        }
+        else
+            exit(1);
     
         char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);    	    
-        printf("Issuer: %s\n", issuer);
-    
+        if (issuer != NULL){
+            printf("Issuer: %s\n", issuer);
+        }
+        else
+            exit(1);
+
         //Free space occupied from X509_new();
         X509_free(cert);  
     }

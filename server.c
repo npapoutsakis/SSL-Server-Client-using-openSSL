@@ -52,40 +52,99 @@ int isRoot()
 
 SSL_CTX* InitServerCTX(void)
 {
-	/* load & register all cryptos, etc. */
-	/* load all error messages */
-	/* create new server-method instance */
-	/* create new context from method */
-    if ( ctx == NULL )
-    {
+    //Similar to initServerCTX
+    /* Load cryptos, et.al. */
+    OpenSSL_add_ssl_algorithms();
+    
+    /* Bring in and register error messages */
+    ERR_load_crypto_strings();
+
+	/* Create new client-method instance -> no need*/
+    //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
+    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_server_method()); /* Create new client-method instance and parse*/
+
+    //If null -> abort()
+    if (ctx == NULL){
         ERR_print_errors_fp(stderr);
         abort();
     }
+
     return ctx;
 }
 
-void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
-{
-    /* set the local certificate from CertFile */
+void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
+{   
+    //Help: https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html
+    //Its usefull to check if paths and files exist
+    //will return 1 if succeed
+    int result = SSL_CTX_load_verify_locations(ctx, CertFile, KeyFile);
+    if(result != 1){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
     
+    result = SSL_CTX_set_default_verify_paths(ctx);
+    if(result != 1){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+    
+    //Help: https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_use_certificate.html
+    /* set the local certificate from CertFile */
+    //will return 1 if succeed
+    result = SSL_CTX_use_certificate_chain_file(ctx, CertFile);   
+    if(result != 1){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+
     /* set the private key from KeyFile (may be the same as CertFile) */
+    result = SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM);   //-> .pem
+    if(result != 1){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
 
     /* verify private key */
+    result = SSL_CTX_check_private_key(ctx);
+    if(result != 1){
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
 
+    return;
 }
 
-void ShowCerts(SSL* ssl)
+void ShowCerts(const SSL* ssl)
 {
-	/* Get certificates (if available) */
-    if ( cert != NULL )
+   //allocate an empty X509 object
+    const X509 *cert = X509_new();
+
+	/* get the server's certificate */ // or get_peer_certificate()?
+    cert = SSL_get_certificate(ssl);    
+
+    //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
+    if (cert != NULL)
     {
         printf("Server certificates:\n");
-        /* */
-        printf("Subject: %s\n", line);
-        free(line);
-        /* */
-        printf("Issuer: %s\n", line);
-        free(line);
+        
+        //X509_NAME_oneline returns the string dynamically, size ignored
+        char *subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
+        if (subj != NULL){
+            printf("Subject: %s\n", subj);
+        }
+        else
+            exit(1);
+    
+        char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);    	    
+        if (issuer != NULL){
+            printf("Issuer: %s\n", issuer);
+        }
+        else
+            exit(1);
+
+        //Free space occupied from X509_new();
+        X509_free(cert);  
     }
     else
         printf("No certificates.\n");
