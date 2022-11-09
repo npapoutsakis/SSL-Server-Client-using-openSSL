@@ -154,22 +154,23 @@ void ShowCerts(SSL* ssl)
 
 void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
-    char buf[1024] = {0};
+    char buf[1024];
     int sd, bytes;
     const char* ServerResponse="<\Body>\
                                 <Name>sousi.com</Name>\
                                 <year>1.5</year>\
-                                <BlogType>Embedede and c\\c++<\BlogType>\
+                                <BlogType>Embedede and c\c++<\BlogType>\
                                 <Author>John Johny<Author>\
-                                <\Body>";
-    
-    const char *cpValidMessage ="<\Body>\
-                                 <UserName>sousi<UserName>\
-                                 <Password>123<Password>\
+                               <\Body>";
+    const char *cpValidMessage = "<Body>\
+                                    <UserName>sousi<UserName>\
+                                    <Password>123<Password>\
                                  <\Body>";
-	
-    /* do SSL-protocol accept */
-    if ( SSL_accept(ssl) == FAIL) {
+    
+    
+    /* do SSL-protocol accept */   
+    if (SSL_accept(ssl) == FAIL) {
+        // printf("fucking failed!\n");
         ERR_print_errors_fp(stderr);
     }
     else {
@@ -196,7 +197,7 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
         sd = SSL_get_fd(ssl);        
         
          /* release SSL state */
-        SSL_free(ssl);                  
+        SSL_free(ssl);                      
         
         /* close connection */
         close(sd);                      
@@ -221,13 +222,13 @@ int main(int count, char *Argc[])
     
     // Initialize the SSL library
     SSL_library_init();
-        
+
     /* initialize SSL */
     SSL_CTX *ctx = InitServerCTX();
-
+    
     /* load certs */
     LoadCertificates(ctx, "mycert.pem", "mycert.pem");
-
+    
     /* create server socket */
     int server_socket = OpenListener(atoi(Argc[1]));
     
@@ -239,7 +240,7 @@ int main(int count, char *Argc[])
 
         int client = accept(server_socket, (struct sockaddr *)&addr, &len);
 
-        printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 		
         /* get new SSL state with context */
         SSL *ssl = SSL_new(ctx);
@@ -253,7 +254,7 @@ int main(int count, char *Argc[])
     
     /* close server socket */
     close(server_socket);
-
+    
 	/* release context */
     SSL_CTX_free(ctx);
     

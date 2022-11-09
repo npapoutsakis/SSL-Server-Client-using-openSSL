@@ -20,6 +20,7 @@ int OpenConnection(const char *hostname, int port)
     struct hostent *host = gethostbyname(hostname);
     if (host == NULL){
         perror(hostname);
+        printf("eeede");
         abort();
     }
     
@@ -51,11 +52,13 @@ SSL_CTX* InitCTX(void)
     OpenSSL_add_all_algorithms();
     
     /* Bring in and register error messages */
-    ERR_load_crypto_strings();
+    SSL_load_error_strings();
 
 	/* Create new client-method instance -> no need*/
     //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
-    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_client_method()); /* Create new client-method instance and parse*/
+    const SSL_METHOD *method = TLSv1_2_client_method();
+    
+    SSL_CTX *ctx = SSL_CTX_new(method); /* Create new client-method instance and parse*/
 
     //If null -> abort()
     if (ctx == NULL){
@@ -119,6 +122,7 @@ int main(int count, char *strings[])
 
     //Open connection
     int server_id = OpenConnection(strings[1], atoi(strings[2])); //atoi used to convert the string into integer
+    printf("Opened Conn!\n");
 
     /* create new SSL connection state */ 
     //Now that we have both the context and the socket id, just create the ssl structure
@@ -128,13 +132,13 @@ int main(int count, char *strings[])
 	SSL_set_fd(ssl, server_id);
 
     /* perform the connection */
-    if ( SSL_connect(ssl) == FAIL )   /* connection fail */
+    if (SSL_connect(ssl) == FAIL)   /* connection fail */
         ERR_print_errors_fp(stderr);
     else
     {
         char acUsername[16] = {0};
         char acPassword[16] = {0};
-        const char *cpRequestMessage = "<\Body>\
+        const char *cpRequestMessage = "<Body>\
                                         <UserName>%s<UserName>\
                                         <Password>%s<Password>\
                                         <\Body>";
@@ -174,7 +178,7 @@ int main(int count, char *strings[])
 
         /* release connection state */
         SSL_free(ssl);
-        //SSL_shutdown(ssl);???
+        // SSL_shutdown(ssl);
     }
 
     /* close socket */
