@@ -112,6 +112,7 @@ void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
         ERR_print_errors_fp(stderr);
         abort();
     }
+
     return;
 }
 
@@ -126,6 +127,7 @@ void ShowCerts(SSL* ssl)
     //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
     if (cert != NULL)
     {
+        printf("\n"); 
         printf("Server certificates:\n");
         
         //X509_NAME_oneline returns the string dynamically, size ignored
@@ -144,7 +146,8 @@ void ShowCerts(SSL* ssl)
             exit(1);
 
         //Free space occupied from X509_new();
-        X509_free(cert);  
+        X509_free(cert);
+        printf("\n"); 
     }
     else
         printf("No certificates.\n");
@@ -168,23 +171,27 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
     
     /* do SSL-protocol accept */   
     if (SSL_accept(ssl) == FAIL) {
-        // printf("fucking failed!\n");
+        // printf("failed!\n");
         ERR_print_errors_fp(stderr);
     }
     else {
+        
         ShowCerts(ssl);
+        
         bytes = SSL_read(ssl, buf, sizeof(buf));
         buf[bytes] = '\0';
         printf("Client msg: \"%s\"\n", buf);
 
+        //If nuim of bytes are read, compare the req string with the valid
         if(bytes > 0) {
+            //If 0 then correct, response with the authetication success msg
             if(strcmp(cpValidMessage,buf) == 0){
                 //print the correct response
                 SSL_write(ssl, ServerResponse, strlen(ServerResponse));
             }
             else {
                 /*else print "Invalid Message" */
-                SSL_write(ssl, "Invalid Message\n", strlen("Invalid Message\n"));
+                SSL_write(ssl, "Invalid Message", strlen("Invalid Message"));
             }
         }
         else {
@@ -230,7 +237,7 @@ int main(int count, char *Argc[])
     /* create server socket */
     int server_socket = OpenListener(atoi(Argc[1]));
     
-    while (1)
+    while(1)
     {
 		/* accept connection as usual */
         struct sockaddr_in addr;

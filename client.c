@@ -76,6 +76,7 @@ void ShowCerts(SSL* ssl)
     //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
     if (cert != NULL)
     {
+        printf("\n"); 
         printf("Server certificates:\n");
         
         //X509_NAME_oneline returns the string dynamically, size ignored
@@ -88,7 +89,7 @@ void ShowCerts(SSL* ssl)
     
         char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);    	    
         if (issuer != NULL){
-            printf("Issuer: %s\n", issuer);
+            printf("Issuer: %s\n\n", issuer);
         }
         else
             exit(1);
@@ -141,9 +142,8 @@ int main(int count, char *strings[])
         printf("Enter the User Name : ");
         scanf("%s",acUsername);
         
-        printf("\n\nEnter the Password : ");
+        printf("Enter the Password : ");
         scanf("%s",acPassword);
-
 
         //sprintf can create the string in the format we want https://www.tutorialspoint.com/c_standard_library/c_function_sprintf.htm
         /* construct reply */
