@@ -134,10 +134,10 @@ int main(int count, char *strings[])
     {
         char acUsername[16] = {0};
         char acPassword[16] = {0};
-        const char *cpRequestMessage = "<Body>\
+        const char *cpRequestMessage = "<BODY>\
                                <UserName>%s<UserName>\
                  <Password>%s<Password>\
-                 <\Body>";
+                 <\BODY>";
 
         printf("Enter the User Name : ");
         scanf("%s",acUsername);

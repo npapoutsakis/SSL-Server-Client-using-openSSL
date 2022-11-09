@@ -158,16 +158,17 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
     char buf[1024];
     int sd, bytes;
 
-    const char* ServerResponse="<\Body>\
+    const char* ServerResponse="<BODY>\
                                <Name>sousi.com</Name>\
                  <year>1.5</year>\
-                 <BlogType>Embedede and c\c++<\BlogType>\
-                 <Author>John Johny<Author>\
-                 <\Body>";
-    const char *cpValidMessage = "<Body>\
+                 <BlogType>Embedede and c\\c++</BlogType>\
+                 <Author>John Johny</Author>\
+                 <\BODY>";
+    
+    const char *cpValidMessage = "<BODY>\
                                <UserName>sousi<UserName>\
                  <Password>123<Password>\
-                 <\Body>";
+                 <\BODY>";
     
     /* do SSL-protocol accept */   
     if (SSL_accept(ssl) == FAIL) {
