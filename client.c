@@ -33,9 +33,7 @@ int OpenConnection(const char *hostname, int port)
     addr.sin_addr.s_addr = *(long*)(host->h_addr);
 
     //Open a connection on socket sd, returns 0 if success
-    connect(sd, (struct sockaddr*)&addr, sizeof(addr));
-
-    if(sd != 0){
+    if(connect(sd, (struct sockaddr*)&addr, sizeof(addr)) != 0){
         perror(hostname);
         abort();
         //Close the file descriptor/socket
@@ -56,9 +54,7 @@ SSL_CTX* InitCTX(void)
 
 	/* Create new client-method instance -> no need*/
     //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
-    const SSL_METHOD *method = TLSv1_2_client_method();
-    
-    SSL_CTX *ctx = SSL_CTX_new(method); /* Create new client-method instance and parse*/
+    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_client_method()); /* Create new client-method instance and parse*/
 
     //If null -> abort()
     if (ctx == NULL){
@@ -75,7 +71,7 @@ void ShowCerts(SSL* ssl)
     X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
-    cert = SSL_get_certificate(ssl);    
+    cert = SSL_get_peer_certificate(ssl);    
 
     //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
     if (cert != NULL)
@@ -122,7 +118,6 @@ int main(int count, char *strings[])
 
     //Open connection
     int server_id = OpenConnection(strings[1], atoi(strings[2])); //atoi used to convert the string into integer
-    printf("Opened Conn!\n");
 
     /* create new SSL connection state */ 
     //Now that we have both the context and the socket id, just create the ssl structure
@@ -139,9 +134,9 @@ int main(int count, char *strings[])
         char acUsername[16] = {0};
         char acPassword[16] = {0};
         const char *cpRequestMessage = "<Body>\
-                                        <UserName>%s<UserName>\
-                                        <Password>%s<Password>\
-                                        <\Body>";
+                               <UserName>%s<UserName>\
+                 <Password>%s<Password>\
+                 <\Body>";
 
         printf("Enter the User Name : ");
         scanf("%s",acUsername);

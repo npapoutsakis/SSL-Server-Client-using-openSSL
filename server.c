@@ -57,13 +57,11 @@ SSL_CTX* InitServerCTX(void)
     OpenSSL_add_ssl_algorithms();
     
     /* Bring in and register error messages */
-    ERR_load_crypto_strings();
+    SSL_load_error_strings();
 
 	/* Create new client-method instance -> no need*/
     //Using TLSv1.2 protocol, TLSv1_2_client_method() returns pointers to CONST static objects
-    const SSL_METHOD *method = TLSv1_2_server_method();
-
-    SSL_CTX *ctx = SSL_CTX_new(method); /* Create new client-method instance and parse*/
+    SSL_CTX *ctx = SSL_CTX_new(TLSv1_2_server_method()); /* Create new client-method instance and parse*/
 
     //If null -> abort()
     if (ctx == NULL){
@@ -74,7 +72,7 @@ SSL_CTX* InitServerCTX(void)
     return ctx;
 }
 
-void LoadCertificates(SSL_CTX* ctx, const char* CertFile, const char* KeyFile)
+void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
 {   
     //Help: https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html
     //Its usefull to check if paths and files exist
@@ -123,7 +121,7 @@ void ShowCerts(SSL* ssl)
     X509 *cert = X509_new();
 
 	/* get the server's certificate */ // or get_peer_certificate()?
-    cert = SSL_get_certificate(ssl);    
+    cert = SSL_get_peer_certificate(ssl);    
 
     //HELPFUL DOC: https://zakird.com/2013/10/13/certificate-parsing-with-openssl
     if (cert != NULL)
@@ -156,17 +154,17 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024];
     int sd, bytes;
+
     const char* ServerResponse="<\Body>\
-                                <Name>sousi.com</Name>\
-                                <year>1.5</year>\
-                                <BlogType>Embedede and c\c++<\BlogType>\
-                                <Author>John Johny<Author>\
-                               <\Body>";
+                               <Name>sousi.com</Name>\
+                 <year>1.5</year>\
+                 <BlogType>Embedede and c\c++<\BlogType>\
+                 <Author>John Johny<Author>\
+                 <\Body>";
     const char *cpValidMessage = "<Body>\
-                                    <UserName>sousi<UserName>\
-                                    <Password>123<Password>\
-                                 <\Body>";
-    
+                               <UserName>sousi<UserName>\
+                 <Password>123<Password>\
+                 <\Body>";
     
     /* do SSL-protocol accept */   
     if (SSL_accept(ssl) == FAIL) {
